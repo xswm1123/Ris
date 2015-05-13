@@ -1,0 +1,58 @@
+//
+//  SiginOverTimeTableViewCell.m
+//  FDC
+//
+//  Created by NewDoone on 15/1/28.
+//  Copyright (c) 2015年 wlpiaoyi. All rights reserved.
+//
+
+#import "SiginOverTimeTableViewCell.h"
+#import "CustomerMainManager.h"
+#import "TelephoneCenter.h"
+#import <CommonSDK/CommonSDK.h>
+
+@implementation SiginOverTimeTableViewCell
+
+- (void)awakeFromNib {
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+//- (IBAction)contactAction:(id)sender {
+//    
+//    UIButton*btn=(UIButton*)sender;
+//    UserEntity* enti=[ConfigManage getLoginUser];
+//    CustomerMainManager* manager=[[CustomerMainManager alloc]init];
+//        if ([btn.titleLabel.text isEqualToString:@"未联系"]) {
+//            [Utils showLoading:@"正在请求数据..."];
+//            [manager optContactedStatusWithCompactId:self.contactId userId:enti.userId success:^(id data, NSDictionary *userInfo) {
+//                btn.titleLabel.text=@"已联系";
+//                [Utils hiddenLoading];
+//            } faild:^(id data, NSDictionary *userInfo) {
+//                [Utils hiddenLoading];
+//            }];
+//    }
+//}
+- (IBAction)callAction:(id)sender {
+    NSString* message=[NSString stringWithFormat:@"是否拨打%@",self.contactPhoneNumber];
+    UIAlertView* al=[[UIAlertView alloc]initWithTitle:@"提示" message:message delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"确定", nil];
+    [al show];
+}
+-(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
+    if (buttonIndex==1) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"tel://%@",self.contactPhoneNumber]]];
+    }
+}
+- (IBAction)sendMessageAction:(id)sender {
+    if(self.contactPhoneNumber != nil){
+        [TelephoneCenter requestSMSWithRecipients:@[self.contactPhoneNumber] message:@"短信"];
+    }else{
+        [Utils showAlert:@"找不到联系方式" title:nil];
+    }
+}
+
+@end

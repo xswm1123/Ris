@@ -1,0 +1,418 @@
+//
+//  ManagerIndexViewController.m
+//  FDC
+//
+//  Created by NewDoone on 15/1/13.
+//  Copyright (c) 2015年 wlpiaoyi. All rights reserved.
+//
+
+#import "ManagerIndexViewController.h"
+#import "AdminManager.h"
+#import "ConfigManage+Expand.h"
+#import "UserEntity.h"
+#import "CustomIOS7AlertView.h"
+#import "LoginController.h"
+
+@interface ManagerIndexViewController ()<CustomIOS7AlertViewDelegate,LeveyPopListViewDelegate>
+@property(nonatomic,strong) NSMutableArray* projectNames;
+@end
+
+@implementation ManagerIndexViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self initView];
+    UIBarButtonItem*rightBar= [self createButtonItemLogout:@selector(logoutAction)];
+    UIBarButtonItem*leftBar=[self createButtonItemSelecteObject:@selector(selectObejct)];
+    self.navigationItem.rightBarButtonItem=rightBar;
+    self.navigationItem.leftBarButtonItem=leftBar;
+    
+    NSDateFormatter * frm=[[NSDateFormatter alloc]init];
+    [frm setLocale:[[NSLocale alloc]initWithLocaleIdentifier:@"zh_CN"]];
+    [frm setDateFormat:@"yyyy-MM-dd"];
+    NSDate* startDate=[NSDate getFirstDayOfWeek];
+    NSDate* endDate=[NSDate getLastDayOfWeek];
+    NSString* start=[frm stringFromDate:startDate];
+    NSString* end=[frm stringFromDate:endDate];
+    self.fromDate.text=start;
+    self.toDate.text=end;
+    [self loadDataWithStartDate:start EndDate:end];
+}
+-(void)logoutAction{
+    UIAlertView* al=[[UIAlertView alloc]initWithTitle:@"温馨提示" message:@"确定要注销此账号？" delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"确定", nil];
+    al.tag=90;
+    [al show];
+}
+
+-(void)selectObejct{
+    self.projectNames=nil;
+    self.projectNames=[NSMutableArray array];
+    UserEntity* user=[ConfigManage getLoginUser];
+    NSArray* arr=user.authorityInfoObjectGroup;
+    //    self.projectName.text=[dic objectForKey:@"WY_WYMC"];
+    //    self.objectId=[dic objectForKey:@"WY_WYID"];
+    for (NSDictionary* dics in arr) {
+        [self.projectNames addObject:[dics objectForKey:@"WY_WYMC"]];
+    }
+    LeveyPopListView* view=[[LeveyPopListView alloc]initWithTitle:@"请选择项目名称" options:self.projectNames];
+    view.delegate=self;
+    [view showInView:self.view.window animated:YES];
+}
+-(void)leveyPopListView:(LeveyPopListView *)popListView didSelectedIndex:(NSInteger)anIndex{
+    self.buildingName.text=[self.projectNames objectAtIndex:anIndex];
+    UserEntity* user=[ConfigManage getLoginUser];
+    user.objectName=[self.projectNames objectAtIndex:anIndex];
+    [ConfigManage setLoginUser:user];
+}
+-(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
+    if (alertView.tag==90) {
+        if (buttonIndex==1) {
+            LoginController* vc=[[LoginController alloc]init];
+            vc.mark=@"logout";
+            [self presentViewController:vc animated:YES completion:^{
+                
+            }];
+        }
+    }
+}
+-(void)initView{
+    UserEntity* user=[ConfigManage getLoginUser];
+    self.userName.text=user.sellerName;
+    self.buildingName.text=user.objectName;
+    self.title=@"首页";
+    self.scrollView.frame=[UIScreen mainScreen].bounds;
+    CGRect frame =self.scrollView.frame;
+    frame.size.height=frame.size.height-self.navigationController.toolbar.frameHeight;
+    self.scrollView.frame=frame;
+    self.scrollView.showsHorizontalScrollIndicator=NO;
+    self.scrollView.showsVerticalScrollIndicator =NO;
+    self.scrollView.bounces=NO;
+    
+    //initProView
+    self.phoneInView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(8, 247, 292, 20) backgroundImage:[[UIImage imageNamed:@"darkBlue.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)]];
+    self.phoneInView.progress=0.0;
+    //leftLabel
+    self.phoneInView.left_nameLabel.frame=CGRectMake(10, 2, 30, 16);
+    self.phoneInView.left_valueLabel.frame=CGRectMake(44, 2, 30, 16);
+    //rightLabel
+    self.phoneInView.right_valueLabel.frame=CGRectMake(self.phoneInView.frame.size.width-40, 2, 30, 16);
+    self.phoneInView.right_nameLabel.frame=CGRectMake(self.phoneInView.frame.size.width-70, 2, 30, 16);
+
+    [self.phoneInView configLabelWithLeftName:@"来电:" leftValue:@"0个" rightName:@"来访:" rightValue:@"0个" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+    
+    [self.scrollView addSubview:self.phoneInView];
+    //=======
+    self.sureBuyView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(8, 281, 292, 20) backgroundImage:[[UIImage imageNamed:@"darkBlue.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) resizingMode:UIImageResizingModeStretch]];
+    self.sureBuyView.progress=0;
+    //leftLabel
+    self.sureBuyView.left_nameLabel.frame=CGRectMake(10, 2, 30, 16);
+    self.sureBuyView.left_valueLabel.frame=CGRectMake(44, 2, 30, 16);
+    //rightLabel
+    self.sureBuyView.right_valueLabel.frame=CGRectMake(self.sureBuyView.frame.size.width-40, 2, 30, 16);
+    self.sureBuyView.right_nameLabel.frame=CGRectMake(self.sureBuyView.frame.size.width-70, 2, 30, 16);
+    
+    [self.sureBuyView configLabelWithLeftName:@"认购:" leftValue:@"0套" rightName:@"签约:" rightValue:@"0套" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+    
+    [self.scrollView addSubview:self.sureBuyView];
+    //======
+    self.sureBuyCountView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(8, 315, 292, 20) backgroundImage:[[UIImage imageNamed:@"darkBlue.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) resizingMode:UIImageResizingModeStretch]];
+    self.sureBuyCountView.progress=0;
+    //leftLabel
+    self.sureBuyCountView.left_nameLabel.frame=CGRectMake(10, 2, 60, 16);
+    self.sureBuyCountView.left_valueLabel.frame=CGRectMake(74, 2, 30, 16);
+    //rightLabel
+    self.sureBuyCountView.right_valueLabel.frame=CGRectMake(self.sureBuyCountView.frame.size.width-40, 2, 60, 16);
+    self.sureBuyCountView.right_nameLabel.frame=CGRectMake(self.sureBuyCountView.frame.size.width-100, 2, 60, 16);
+    
+    [self.sureBuyCountView configLabelWithLeftName:@"认购金额:" leftValue:@"0万" rightName:@"签约金额:" rightValue:@"0万" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+    [self.scrollView addSubview:self.sureBuyCountView];
+    //=======
+    self.accountView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(8, 349, 292, 20) backgroundImage:[[UIImage imageNamed:@"darkGray.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) resizingMode:UIImageResizingModeStretch]];
+    self.accountView.progress=0;
+    //leftLabel
+    self.accountView.left_nameLabel.frame=CGRectMake(10, 2, 60, 16);
+    self.accountView.left_valueLabel.frame=CGRectMake(74, 2, 30, 16);
+    //rightLabel
+    self.accountView.right_valueLabel.frame=CGRectMake(self.accountView.frame.size.width-40, 2, 60, 16);
+    self.accountView.right_nameLabel.frame=CGRectMake(self.accountView.frame.size.width-80, 2, 40, 16);
+    
+    [self.accountView configLabelWithLeftName:@"实收款:" leftValue:@"0万" rightName:@"应收款:" rightValue:@"0万" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor blackColor]];
+    [self.scrollView addSubview:self.accountView];
+    //view
+    self.mostSellView.frame=CGRectMake(8, self.accountView.frame.origin.y+40, [UIScreen mainScreen].bounds.size.width-16, 235);
+    self.sellPlanView.frame=CGRectMake(8, self.mostSellView.frame.origin.y+self.mostSellView.frame.size.height+20, [UIScreen mainScreen].bounds.size.width-16, 180);
+    //PlanProView
+    self.forthSeasonView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(78, 54, 200, 20) backgroundImage:[[UIImage imageNamed:@"darkGray.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"darkYelllow.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)]];
+    self.forthSeasonView.progress=0.7;
+    //leftLabel
+    self.forthSeasonView.left_nameLabel.frame=CGRectMake(10, 2, 60, 16);
+    self.forthSeasonView.left_valueLabel.frame=CGRectMake(74, 2, 30, 16);
+    //rightLabel
+    self.forthSeasonView.right_valueLabel.frame=CGRectMake(self.forthSeasonView.frame.size.width-40, 2, 60, 16);
+    self.forthSeasonView.right_nameLabel.frame=CGRectMake(self.forthSeasonView.frame.size.width-70, 2, 30, 16);
+    
+    [self.forthSeasonView configLabelWithLeftName:@"实际完成:" leftValue:@"2万" rightName:@"计划:" rightValue:@"10万" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+    [self.sellPlanView addSubview:self.forthSeasonView];
+    //=====
+    self.thirdSeasonView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(78, 91, 200, 20) backgroundImage:[[UIImage imageNamed:@"darkGray.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)]];
+    self.thirdSeasonView.progress=0.2;
+    //leftLabel
+    self.thirdSeasonView.left_nameLabel.frame=CGRectMake(10, 2, 60, 16);
+    self.thirdSeasonView.left_valueLabel.frame=CGRectMake(74, 2, 30, 16);
+    //rightLabel
+    self.thirdSeasonView.right_valueLabel.frame=CGRectMake(self.thirdSeasonView.frame.size.width-40, 2, 60, 16);
+    self.thirdSeasonView.right_nameLabel.frame=CGRectMake(self.thirdSeasonView.frame.size.width-70, 2, 30, 16);
+    
+    [self.thirdSeasonView configLabelWithLeftName:@"实际完成:" leftValue:@"2万" rightName:@"计划:" rightValue:@"10万" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+    [self.sellPlanView addSubview:self.thirdSeasonView];
+    //=====
+    self.secondSeasonView=[[MCProgressBarView alloc]initWithFrame:CGRectMake(78, 130, 200, 20) backgroundImage:[[UIImage imageNamed:@"darkGray.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10) ] foregroundImage:[[UIImage imageNamed:@"rectCircle.png"]resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)]];
+    self.secondSeasonView.progress=0.4;
+    //leftLabel
+    self.secondSeasonView.left_nameLabel.frame=CGRectMake(10, 2, 60, 16);
+    self.secondSeasonView.left_valueLabel.frame=CGRectMake(74, 2, 30, 16);
+    //rightLabel
+    self.secondSeasonView.right_valueLabel.frame=CGRectMake(self.secondSeasonView.frame.size.width-40, 2, 60, 16);
+    self.secondSeasonView.right_nameLabel.frame=CGRectMake(self.secondSeasonView.frame.size.width-70, 2, 30, 16);
+    
+    [self.secondSeasonView configLabelWithLeftName:@"实际完成:" leftValue:@"2万" rightName:@"计划:" rightValue:@"10万" labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+    [self.sellPlanView addSubview:self.secondSeasonView];
+    //config ScrollView ContentSize
+    self.scrollView.contentSize=CGSizeMake([UIScreen mainScreen].bounds.size.width, self.sellPlanView.frameY+self.sellPlanView.frameHeight+80);
+    
+}
+-(void)loadDataWithStartDate:(NSString*) start EndDate:(NSString*) end{
+    [Utils showLoading:@"正在加载数据..."];
+    AdminManager* manager=[[AdminManager alloc]init];
+    UserEntity* user=[ConfigManage getLoginUser];
+    [manager queryManagerMainInfoWithObjectId:user.objectId UserId:user.userId startTime:start endTime:end success:^(id data, NSDictionary *userInfo) {
+        NSLog(@"data===%@",data);
+        NSArray* datas=(NSArray*)data;
+        NSDictionary* customer=[datas objectAtIndex:0];
+        NSArray* customers=[customer objectForKey:@"LstArry"];
+        // 来电  来访
+        NSDictionary* phoneComeIn=[customers objectAtIndex:0];
+        NSDictionary* interView=[customers objectAtIndex:1];
+        [self.phoneInView configLabelWithLeftName:@"来电:" leftValue:[NSString stringWithFormat:@"%@个",[phoneComeIn objectForKey:@"ZD_ZDVAL"]] rightName:@"来访:" rightValue:[NSString stringWithFormat:@"%@个",[interView objectForKey:@"ZD_ZDVAL"]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+        if ([[interView objectForKey:@"ZD_ZDVAL"] isEqualToString:@"0"]) {
+            self.phoneInView.progress=0.0;
+        }else{
+            CGFloat progress;
+            progress= [[interView objectForKey:@"ZD_ZDVAL"] integerValue]/[[phoneComeIn objectForKey:@"ZD_ZDVAL"] integerValue];
+            self.phoneInView.progress=progress;
+        }
+        
+        //认购 签约
+        NSDictionary* sureBuy=[customers objectAtIndex:2];
+        NSDictionary* sign=[customers objectAtIndex:3];
+        
+        [self.sureBuyView configLabelWithLeftName:@"认购:" leftValue:[NSString stringWithFormat:@"%@套",[sureBuy objectForKey:@"ZD_ZDVAL"]] rightName:@"签约:" rightValue:[NSString stringWithFormat:@"%@套",[sign objectForKey:@"ZD_ZDVAL"]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+        if ([[sign objectForKey:@"ZD_ZDVAL"] isEqualToString:@"0"]) {
+            self.sureBuyView.progress=0.0;
+        }else{
+            CGFloat progress;
+            progress= [[sign objectForKey:@"ZD_ZDVAL"] integerValue]/[[sureBuy objectForKey:@"ZD_ZDVAL"] integerValue];
+            self.sureBuyView.progress=progress;
+        }
+        
+        //认购签约 金额
+        NSDictionary* sureBuyCount=[customers objectAtIndex:4];
+        NSDictionary* signCount=[customers objectAtIndex:5];
+        [self.sureBuyCountView configLabelWithLeftName:@"认购金额:" leftValue:[NSString stringWithFormat:@"%@万",[sureBuyCount objectForKey:@"ZD_ZDVAL"]] rightName:@"签约金额:" rightValue:[NSString stringWithFormat:@"%@万",[signCount objectForKey:@"ZD_ZDVAL"]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor whiteColor]];
+        
+        
+        if ([[signCount objectForKey:@"ZD_ZDVAL"] isEqualToString:@"0"]) {
+            self.sureBuyCountView.progress=0.0;
+        }else{
+            CGFloat progress;
+            progress= [[signCount objectForKey:@"ZD_ZDVAL"] integerValue]/[[sureBuyCount objectForKey:@"ZD_ZDVAL"] integerValue];
+            self.sureBuyCountView.progress=progress;
+        }
+        //实收  应收
+        NSDictionary* realCount=[customers objectAtIndex:6];
+        NSDictionary* shouldCount=[customers objectAtIndex:7];
+        [self.accountView configLabelWithLeftName:@"实收款:" leftValue:[NSString stringWithFormat:@"%@万",[realCount objectForKey:@"ZD_ZDVAL"]] rightName:@"应收款:" rightValue:[NSString stringWithFormat:@"%@万",[shouldCount objectForKey:@"ZD_ZDVAL"]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor whiteColor] RlabelTextColor:[UIColor blackColor]];
+        
+        if ([[shouldCount objectForKey:@"ZD_ZDVAL"] isEqualToString:@"0"]) {
+            self.accountView.progress=0.0;
+        }else{
+            CGFloat progress;
+            progress= [[shouldCount objectForKey:@"ZD_ZDVAL"] integerValue]/[[realCount objectForKey:@"ZD_ZDVAL"] integerValue];
+            self.accountView.progress=progress;
+        }
+        //畅销户型  空数据暂时1！！！！！！！！！
+//        NSDictionary* house=[datas objectAtIndex:1];
+//        NSLog(@"house==%@",house);
+//        NSLog(@"name==%@",[house objectForKey:@"ZD_ZDMC"]);
+        //计划
+        NSDictionary* plan=[datas objectAtIndex:3];
+        NSArray* plans=[plan objectForKey:@"LstArry"];
+        //四季度
+        NSDictionary* four=[plans objectAtIndex:3];
+        NSString* value_four=[four objectForKey:@"ZD_ZDVAL"];
+        NSArray* values_four=[value_four componentsSeparatedByString:@"|"];
+        [self.forthSeasonView configLabelWithLeftName:@"实际完成:" leftValue:[NSString stringWithFormat:@"%@万",[values_four firstObject]] rightName:@"计划:" rightValue:[NSString stringWithFormat:@"%@万",[values_four lastObject]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+        if ([[values_four lastObject] isEqualToString:@"0"]) {
+             self.forthSeasonView.progress=0;
+        }else{
+            CGFloat progress;
+            progress=[[values_four firstObject] integerValue]/[[values_four lastObject]integerValue];
+            self.forthSeasonView.progress=progress;
+        }
+        //三季度
+        NSDictionary* three=[plans objectAtIndex:2];
+        NSString* value_three=[three objectForKey:@"ZD_ZDVAL"];
+        NSArray* values_three=[value_three componentsSeparatedByString:@"|"];
+        [self.thirdSeasonView configLabelWithLeftName:@"实际完成:" leftValue:[NSString stringWithFormat:@"%@万",[values_three firstObject]] rightName:@"计划:" rightValue:[NSString stringWithFormat:@"%@万",[values_three lastObject]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+        if ([[values_three lastObject] isEqualToString:@"0"]) {
+            self.thirdSeasonView.progress=0;
+        }else{
+            CGFloat progress;
+            progress=[[values_three firstObject] integerValue]/[[values_three lastObject]integerValue];
+            self.thirdSeasonView.progress=progress;
+        }
+        //二季度
+        NSDictionary* two=[plans objectAtIndex:1];
+        NSString* value_two=[two objectForKey:@"ZD_ZDVAL"];
+        NSArray* values_two=[value_two componentsSeparatedByString:@"|"];
+        [self.secondSeasonView configLabelWithLeftName:@"实际完成:" leftValue:[NSString stringWithFormat:@"%@万",[values_two firstObject]] rightName:@"计划:" rightValue:[NSString stringWithFormat:@"%@万",[values_two lastObject]] labelFont: [UIFont systemFontOfSize:12] LlabelTextColor:[UIColor blackColor] RlabelTextColor:[UIColor blackColor]];
+        if ([[values_two lastObject] isEqualToString:@"0"]) {
+            self.secondSeasonView.progress=0;
+        }else{
+            CGFloat progress;
+            progress=[[values_two firstObject] integerValue]/[[values_two lastObject]integerValue];
+            self.secondSeasonView.progress=progress;
+        }
+
+        [Utils hiddenLoading];
+        
+    } faild:^(id data, NSDictionary *userInfo) {
+         [Utils hiddenLoading];
+    }];
+    
+
+}
+
+- (IBAction)queryTodayData:(id)sender {
+    NSDate* endDate=[NSDate date];
+    NSTimeZone *zone = [NSTimeZone systemTimeZone];
+    NSInteger interval = [zone secondsFromGMTForDate: endDate];
+    NSDate *localeDate = [endDate  dateByAddingTimeInterval: interval];
+    
+    NSDateFormatter *frm=[[NSDateFormatter alloc]init];
+    NSLocale *mylocal=[[NSLocale alloc]initWithLocaleIdentifier:@"zh_CN"];
+    [frm setLocale:mylocal];
+    [frm setDateFormat:@"YYYY-MM-dd"];
+    NSString* end=[frm stringFromDate:localeDate];
+    [self loadDataWithStartDate:end EndDate:end];
+    self.fromDate.text=[frm stringFromDate:localeDate];
+    self.toDate.text=[frm stringFromDate:localeDate];
+}
+- (IBAction)queryWeekData:(id)sender {
+    [self showAlertView];
+//    NSDateFormatter * frm=[[NSDateFormatter alloc]init];
+//    [frm setLocale:[NSLocale currentLocale]];
+//    [frm setDateFormat:@"yyyy-mm-dd"];
+//    NSDate* startDate=[NSDate dateStartOfWeek];
+//    NSDate* endDate=[NSDate dateEndOfWeek];
+//    self.fromDate.text=[frm stringFromDate:startDate];
+//    self.toDate.text=[frm stringFromDate:endDate];
+}
+-(void)showAlertView{
+    NSLog(@"showAlertView");
+    UIView* backGroundView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, 200, 150)];
+    backGroundView.backgroundColor=[UIColor whiteColor];
+    CustomIOS7AlertView* al=[[CustomIOS7AlertView alloc]init];
+    al.parentView=self.view;
+    UILabel* titleLabel=[[UILabel alloc]initWithFrame:CGRectMake(0, 0, 200, 40)];
+    titleLabel.text=@"请选择时间";
+    titleLabel.textAlignment=NSTextAlignmentCenter;
+    titleLabel.backgroundColor=[UIColor colorWithRed:0.396 green:0.788 blue:0.996 alpha:1];
+    titleLabel.textColor=[UIColor whiteColor];
+    [backGroundView addSubview:titleLabel];
+    
+    UILabel* start=[[UILabel alloc]initWithFrame:CGRectMake(10, 50, 60, 30)];
+    start.text=@"开始时间";
+    start.textAlignment=NSTextAlignmentLeft;
+    start.textColor=[UIColor blackColor];
+    start.font=[UIFont systemFontOfSize:14.0];
+    [backGroundView addSubview:start];
+    
+    UILabel* startTF=[[UILabel alloc]initWithFrame:CGRectMake(80, 50, 100, 30)];
+    startTF.font=[UIFont systemFontOfSize:14.0];
+    startTF.tag=100;
+    startTF.userInteractionEnabled=YES;
+    startTF.backgroundColor=[UIColor lightGrayColor];
+    UITapGestureRecognizer* start_tap=[[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(chooseDate:)];
+    [startTF addGestureRecognizer:start_tap];
+    [backGroundView addSubview:startTF];
+    
+    UILabel* end=[[UILabel alloc]initWithFrame:CGRectMake(10, 90, 60, 30)];
+    end.text=@"结束时间";
+    end.textAlignment=NSTextAlignmentLeft;
+    end.textColor=[UIColor blackColor];
+    end.font=[UIFont systemFontOfSize:14.0];
+    [backGroundView addSubview:end];
+    
+    UILabel* endTF=[[UILabel alloc]initWithFrame:CGRectMake(80, 90, 100, 30)];
+    endTF.tag=200;
+    endTF.font=[UIFont systemFontOfSize:14.0];
+    endTF.userInteractionEnabled=YES;
+    endTF.backgroundColor=[UIColor lightGrayColor];
+    UITapGestureRecognizer* end_tap=[[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(chooseDate:)];
+    [endTF addGestureRecognizer:end_tap];
+    [backGroundView addSubview:endTF];
+    
+    
+    al.containerView=backGroundView;
+    NSArray* titles=@[@"关闭",@"查询"];
+    al.buttonTitles=titles;
+    al.delegate=self;
+    [al show];
+}
+-(void)chooseDate:(UITapGestureRecognizer*) gesture{
+    UIDatePicker* dp=[[UIDatePicker alloc]initWithFrame:CGRectMake(-20, 40, [UIScreen mainScreen].bounds.size.width, 216)];
+    dp.datePickerMode=UIDatePickerModeDate;
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"请选择时间\n\n\n\n\n\n\n\n\n\n\n\n" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertAction *cancleAction = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+        NSTimeZone *zone = [NSTimeZone systemTimeZone];
+        NSInteger interval = [zone secondsFromGMTForDate: dp.date];
+        NSDate *localeDate = [dp.date  dateByAddingTimeInterval: interval];
+        NSDateFormatter * frm=[[NSDateFormatter alloc]init];
+        [frm setLocale:[[NSLocale alloc]initWithLocaleIdentifier:@"zh_CN"]];
+        [frm setDateFormat:@"YYYY-MM-dd"];
+        if (gesture.view.tag==100) {
+            
+            ((UILabel*)gesture.view).text=[frm stringFromDate:localeDate];
+        }
+        if (gesture.view.tag==200) {
+            ((UILabel*)gesture.view).text=[frm stringFromDate:localeDate];
+        }
+    }];
+    [alertController.view addSubview:dp];
+    [alertController addAction:cancleAction];
+    [self presentViewController:alertController animated:YES completion:nil];
+}
+- (void)customIOS7dialogButtonTouchUpInside:(CustomIOS7AlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
+    
+    if (buttonIndex==0) {
+        [alertView close];
+    }
+    if (buttonIndex==1) {
+        
+        NSArray* arr=alertView.containerView.subviews;
+        for (UIView *view in arr) {
+            if (view.tag==100) {
+                self.fromDate.text=((UILabel*)view).text;
+            }
+            if (view.tag==200) {
+             self.toDate.text =((UILabel*)view).text;
+            }
+        }
+        [self loadDataWithStartDate:self.fromDate.text EndDate:self.toDate.text ];
+        [alertView close];
+    }
+    
+}
+
+@end
